@@ -1,0 +1,38 @@
+{
+  "strategy": "zero_shot",
+  "prompt_prefix": "DROP TABLE IF EXISTS catch;\nDROP TABLE IF EXISTS fish;\nDROP TABLE IF EXISTS fly;\nDROP TABLE IF EXISTS native_fish;\nDROP TABLE IF EXISTS owned_fly;\nDROP TABLE IF EXISTS person;\nDROP TABLE IF EXISTS state;\n\nCREATE TABLE catch (\n  catch_id INTEGER PRIMARY KEY,\n  fisherman INTEGER NOT NULL,\n  species INTEGER NOT NULL,\n  fly INTEGER NOT NULL,\n  length DECIMAL(4,2),\n  weight DECIMAL(4,2),\n  catch_time DATETIME,\n  state CHAR(2),\n  released TINYINT,\n  FOREIGN KEY (fisherman) REFERENCES person (person_id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n  FOREIGN KEY (species) REFERENCES fish (fish_id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n  FOREIGN KEY (fly) REFERENCES fly (fly_id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n  FOREIGN KEY (state) REFERENCES state (state_code) ON DELETE RESTRICT ON UPDATE RESTRICT\n);\n\nCREATE TABLE fish (\n  fish_id INTEGER PRIMARY KEY,\n  species VARCHAR(45) NOT NULL,\n  avg_length DECIMAL(4,2),\n  avg_weight DECIMAL(4,2)\n);\n\nCREATE TABLE fly (\n  fly_id INTEGER PRIMARY KEY,\n  brand VARCHAR(45),\n  price DECIMAL(3,2),\n  homemade TINYINT DEFAULT 0\n);\n\nCREATE TABLE native_fish (\n  state CHAR(2) NOT NULL,\n  fish_id INTEGER NOT NULL,\n  PRIMARY KEY (state, fish_id),\n  FOREIGN KEY (fish_id) REFERENCES fish (fish_id) ON DELETE CASCADE ON UPDATE CASCADE,\n  FOREIGN KEY (state) REFERENCES state (state_code) ON DELETE RESTRICT ON UPDATE RESTRICT\n);\n\nCREATE TABLE owned_fly (\n  fisherman INTEGER NOT NULL,\n  fly INTEGER NOT NULL,\n  PRIMARY KEY (fisherman, fly),\n  FOREIGN KEY (fly) REFERENCES fly (fly_id) ON DELETE CASCADE ON UPDATE CASCADE,\n  FOREIGN KEY (fisherman) REFERENCES person (person_id) ON DELETE CASCADE ON UPDATE CASCADE\n);\n\nCREATE TABLE person (\n  person_id INTEGER NOT NULL PRIMARY KEY,\n  name VARCHAR(45) NOT NULL\n);\n\nCREATE TABLE state (\n  state_code CHAR(2) NOT NULL PRIMARY KEY\n);\n\n--- Using valid sqlite, answer the following questions for the tables provided above.\nQuestion: ",
+  "questionResults": [
+    {
+      "question": "What is the most caught fish species?",
+      "error": "near \"species\": syntax error"
+    },
+    {
+      "question": "Where was the largest fish caught recorded in the database?",
+      "error": "near \"state\": syntax error"
+    },
+    {
+      "question": "Which fisherman has been most successful",
+      "error": "near \"fisherman\": syntax error"
+    },
+    {
+      "question": "Are there any anglers that tend to catch fish larger than average?",
+      "error": "near \"p\": syntax error"
+    },
+    {
+      "question": "Is there a brand of flies that does better at catching fish?",
+      "error": "near \"brand\": syntax error"
+    },
+    {
+      "question": "What is the ratio of native to non-native fish caught?",
+      "error": "near \"To\": syntax error"
+    },
+    {
+      "question": "What time of day is best for catching fish?",
+      "error": "near \"The\": syntax error"
+    },
+    {
+      "question": "For anglers who use home tied flies, what is the ratio of fish released vs fish kept?",
+      "error": "no such column: kept"
+    }
+  ]
+}

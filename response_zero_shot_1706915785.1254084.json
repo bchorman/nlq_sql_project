@@ -1,0 +1,62 @@
+{
+  "strategy": "zero_shot",
+  "prompt_prefix": "DROP TABLE IF EXISTS catch;\nDROP TABLE IF EXISTS fish;\nDROP TABLE IF EXISTS fly;\nDROP TABLE IF EXISTS native_fish;\nDROP TABLE IF EXISTS owned_fly;\nDROP TABLE IF EXISTS person;\nDROP TABLE IF EXISTS state;\n\nCREATE TABLE catch (\n  catch_id INTEGER PRIMARY KEY,\n  fisherman INTEGER NOT NULL,\n  species INTEGER NOT NULL,\n  fly INTEGER NOT NULL,\n  length DECIMAL(4,2),\n  weight DECIMAL(4,2),\n  catch_time DATETIME,\n  state CHAR(2),\n  released TINYINT,\n  FOREIGN KEY (fisherman) REFERENCES person (person_id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n  FOREIGN KEY (species) REFERENCES fish (fish_id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n  FOREIGN KEY (fly) REFERENCES fly (fly_id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n  FOREIGN KEY (state) REFERENCES state (state_code) ON DELETE RESTRICT ON UPDATE RESTRICT\n);\n\nCREATE TABLE fish (\n  fish_id INTEGER PRIMARY KEY,\n  species VARCHAR(45) NOT NULL,\n  avg_length DECIMAL(4,2),\n  avg_weight DECIMAL(4,2)\n);\n\nCREATE TABLE fly (\n  fly_id INTEGER PRIMARY KEY,\n  brand VARCHAR(45),\n  price DECIMAL(3,2),\n  homemade TINYINT DEFAULT 0\n);\n\nCREATE TABLE native_fish (\n  state CHAR(2) NOT NULL,\n  fish_id INTEGER NOT NULL,\n  PRIMARY KEY (state, fish_id),\n  FOREIGN KEY (fish_id) REFERENCES fish (fish_id) ON DELETE CASCADE ON UPDATE CASCADE,\n  FOREIGN KEY (state) REFERENCES state (state_code) ON DELETE RESTRICT ON UPDATE RESTRICT\n);\n\nCREATE TABLE owned_fly (\n  fisherman INTEGER NOT NULL,\n  fly INTEGER NOT NULL,\n  PRIMARY KEY (fisherman, fly),\n  FOREIGN KEY (fly) REFERENCES fly (fly_id) ON DELETE CASCADE ON UPDATE CASCADE,\n  FOREIGN KEY (fisherman) REFERENCES person (person_id) ON DELETE CASCADE ON UPDATE CASCADE\n);\n\nCREATE TABLE person (\n  person_id INTEGER NOT NULL PRIMARY KEY,\n  name VARCHAR(45) NOT NULL\n);\n\nCREATE TABLE state (\n  state_code CHAR(2) NOT NULL PRIMARY KEY\n);\n\n--- Using valid sqlite, answer the following questions for the tables provided above.\nQuestion: ",
+  "questionResults": [
+    {
+      "question": "What is the most caught fish species?",
+      "sql": "\nSELECT f.species, COUNT(c.catch_id) AS num_catches\nFROM catch c\nJOIN fish f ON c.species = f.fish_id\nGROUP BY c.species\nORDER BY num_catches DESC\nLIMIT 1;\n",
+      "queryResult": "[('bull trout', 10)]",
+      "friendlyResponse": "The most caught fish species, according to the data you provided, is the bull trout, with a total of 10 catches.",
+      "error": "None"
+    },
+    {
+      "question": "Where was the largest fish caught recorded in the database?",
+      "sql": "\nSELECT \n    c.state,\n    s.state_code,\n    MAX(c.weight) AS largest_weight\nFROM \n    catch c\nINNER JOIN \n    state s ON c.state = s.state_code\nGROUP BY \n    c.state\nORDER BY \n    largest_weight DESC\nLIMIT 1;\n",
+      "queryResult": "[('NV', 'NV', 4.9)]",
+      "friendlyResponse": "The largest fish recorded in the database was caught in Nevada (NV), and it weighed 4.9 units (the specific unit of weight wasn't specified).",
+      "error": "None"
+    },
+    {
+      "question": "Which fisherman has been most successful",
+      "sql": "\nSELECT p.person_id, p.name, COUNT(c.catch_id) AS total_catches\nFROM person p\nJOIN catch c ON p.person_id = c.fisherman\nGROUP BY p.person_id, p.name\nORDER BY total_catches DESC\nLIMIT 1;\n",
+      "queryResult": "[(1, 'John Smith', 5)]",
+      "friendlyResponse": "John Smith is the most successful fisherman, with a total of 5 catches.",
+      "error": "None"
+    },
+    {
+      "question": "Are there any anglers that tend to catch fish larger than average?",
+      "sql": "\nSELECT \n  c.fisherman,\n  p.name AS angler_name,\n  AVG(c.length) AS average_catch_length,\n  f.avg_length AS species_average_length\nFROM \n  catch AS c\n  JOIN person AS p ON c.fisherman = p.person_id\n  JOIN fish AS f ON c.species = f.fish_id\nGROUP BY \n  c.fisherman, f.fish_id\nHAVING \n  average_catch_length > species_average_length;\n",
+      "queryResult": "[(3, 'Fisher Mann', 21.2, 16), (4, 'Emily Brown', 21.2, 16), (4, 'Emily Brown', 24.1, 23.5), (5, 'Rusty Shackleford', 21.2, 16), (5, 'Rusty Shackleford', 18.6, 17.7), (5, 'Rusty Shackleford', 24.1, 23.5), (6, 'Jessica Martinez', 18.6, 17.7), (6, 'Jessica Martinez', 24.1, 23.5), (6, 'Jessica Martinez', 23.8, 22.6), (7, 'David Anderson', 17.9, 16), (7, 'David Anderson', 18.6, 17.7), (7, 'David Anderson', 23.8, 22.6), (8, 'Sarah Taylor', 17.9, 16), (8, 'Sarah Taylor', 23.8, 22.6), (9, 'Matthew Thomas', 17.9, 16)]",
+      "friendlyResponse": "The query results show a list of anglers who have caught fish larger than the average size for each species. Here's a quick summary:\n\n- Fisher Mann has an average catch length of 21.2 inches for a species that typically averages 16 inches.\n- Emily Brown caught fish of 21.2 inches and 24.1 inches, against species averages of 16 and 23.5 inches, respectively.\n- Rusty Shackleford's catches include fish longer than the species averages: 21.2 inches (against 16), 18.6 inches (against 17.7), and 24.1 inches (against 23.5).\n- Jessica Martinez caught fish of 18.6 inches, 24.1 inches, and 23.8 inches, surpassing the species averages of 17.7 inches, 23.5 inches, and 22.6 inches, respectively.\n- David Anderson and Sarah Taylor both caught fish larger than their species' average lengths in their respective catches as well.\n- Matthew Thomas is noted for catching a fish that is 1.9 inches longer than the average for its species.\n\nEach entry showcases an angler\u2019s ability to catch fish that exceed the typical size expectation for the species they\u2019re targeting.",
+      "error": "None"
+    },
+    {
+      "question": "Is there a brand of flies that does better at catching fish?",
+      "sql": "\nSELECT fl.brand, COUNT(*) AS num_catches\nFROM catch AS c\nJOIN fly AS fl ON c.fly = fl.fly_id\nGROUP BY fl.brand\nORDER BY num_catches DESC;\n",
+      "queryResult": "[(None, 20), ('Umpqua', 10), ('RoundRocks', 10), ('Betts', 10)]",
+      "friendlyResponse": "The results from the query show that there is a single brand of flies that stands out as having the most catches, but it appears as \"None\" with 20 catches. This could imply that the brand information for these flies wasn't recorded. Following that, three brands tied with 10 catches each: Umpqua, RoundRocks, and Betts. So, based on the available brand information, Umpqua, RoundRocks, and Betts are the brands of flies that did well in catching fish according to your data.",
+      "error": "None"
+    },
+    {
+      "question": "What is the ratio of native to non-native fish caught?",
+      "sql": "\nWITH catch_native_status AS (\n    SELECT \n        c.catch_id,\n        CASE \n            WHEN nf.state IS NOT NULL THEN 'Native'\n            ELSE 'Non-Native'\n        END AS native_status\n    FROM \n        catch c\n    LEFT JOIN \n        native_fish nf ON c.species = nf.fish_id AND c.state = nf.state\n)\n\n, native_count AS (\n    SELECT \n        COUNT(*) AS native_total\n    FROM \n        catch_native_status\n    WHERE \n        native_status = 'Native'\n)\n\n, non_native_count AS (\n    SELECT \n        COUNT(*) AS non_native_total\n    FROM \n        catch_native_status\n    WHERE \n        native_status = 'Non-Native'\n)\n\nSELECT \n    (SELECT native_total FROM native_count)*1.0 / (SELECT non_native_total FROM non_native_count) AS native_to_non_native_ratio\n;\n",
+      "queryResult": "[(1.0,)]",
+      "friendlyResponse": "The result \"1.0\" indicates that the ratio of native to non-native fish caught is 1:1. This means that for every native fish caught, there is also one non-native fish caught, showing an equal catch amount for both groups.",
+      "error": "None"
+    },
+    {
+      "question": "What time of day is best for catching fish?",
+      "sql": "\nSELECT \n  strftime('%H', catch_time) AS hour, \n  COUNT(*) AS num_catches,\n  AVG(weight) AS average_weight\nFROM \n  catch\nGROUP BY \n  hour\nORDER BY \n  num_catches DESC, average_weight DESC\nLIMIT 1;\n",
+      "queryResult": "[('10', 5, 4.9)]",
+      "friendlyResponse": "Based on the data, the best time of day for catching fish is at 10 AM. At this hour, there were 5 catches with an average weight of 4.9 pounds.",
+      "error": "None"
+    },
+    {
+      "question": "For anglers who use home tied flies, what is the ratio of fish released vs fish kept?",
+      "sql": "\nSELECT \n  SUM(CASE WHEN c.released = 1 THEN 1 ELSE 0 END) AS released_count,\n  SUM(CASE WHEN c.released = 0 THEN 1 ELSE 0 END) AS kept_count,\n  CAST(SUM(CASE WHEN c.released = 1 THEN 1 ELSE 0 END) AS FLOAT) / \n  CAST(SUM(CASE WHEN c.released = 0 THEN 1 ELSE 0 END) AS FLOAT) AS release_to_keep_ratio\nFROM \n  catch AS c\nJOIN \n  fly AS f ON c.fly = f.fly_id\nWHERE \n  f.homemade = 1;\n",
+      "queryResult": "[(10, 10, 1.0)]",
+      "friendlyResponse": "Based on the query results, anglers who use home-tied flies have released as many fish as they've kept. Specifically, the count of released fish is 10, and the count of kept fish is also 10, leading to a release-to-keep ratio of 1.0. This ratio shows a balanced approach between releasing and keeping fish among these anglers.",
+      "error": "None"
+    }
+  ]
+}

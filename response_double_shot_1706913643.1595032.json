@@ -1,0 +1,56 @@
+{
+  "strategy": "double_shot",
+  "prompt_prefix": "DROP TABLE IF EXISTS catch;\nDROP TABLE IF EXISTS fish;\nDROP TABLE IF EXISTS fly;\nDROP TABLE IF EXISTS native_fish;\nDROP TABLE IF EXISTS owned_fly;\nDROP TABLE IF EXISTS person;\nDROP TABLE IF EXISTS state;\n\nCREATE TABLE catch (\n  catch_id INTEGER PRIMARY KEY,\n  fisherman INTEGER NOT NULL,\n  species INTEGER NOT NULL,\n  fly INTEGER NOT NULL,\n  length DECIMAL(4,2),\n  weight DECIMAL(4,2),\n  catch_time DATETIME,\n  state CHAR(2),\n  released TINYINT,\n  FOREIGN KEY (fisherman) REFERENCES person (person_id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n  FOREIGN KEY (species) REFERENCES fish (fish_id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n  FOREIGN KEY (fly) REFERENCES fly (fly_id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n  FOREIGN KEY (state) REFERENCES state (state_code) ON DELETE RESTRICT ON UPDATE RESTRICT\n);\n\nCREATE TABLE fish (\n  fish_id INTEGER PRIMARY KEY,\n  species VARCHAR(45) NOT NULL,\n  avg_length DECIMAL(4,2),\n  avg_weight DECIMAL(4,2)\n);\n\nCREATE TABLE fly (\n  fly_id INTEGER PRIMARY KEY,\n  brand VARCHAR(45),\n  price DECIMAL(3,2),\n  homemade TINYINT DEFAULT 0\n);\n\nCREATE TABLE native_fish (\n  state CHAR(2) NOT NULL,\n  fish_id INTEGER NOT NULL,\n  PRIMARY KEY (state, fish_id),\n  FOREIGN KEY (fish_id) REFERENCES fish (fish_id) ON DELETE CASCADE ON UPDATE CASCADE,\n  FOREIGN KEY (state) REFERENCES state (state_code) ON DELETE RESTRICT ON UPDATE RESTRICT\n);\n\nCREATE TABLE owned_fly (\n  fisherman INTEGER NOT NULL,\n  fly INTEGER NOT NULL,\n  PRIMARY KEY (fisherman, fly),\n  FOREIGN KEY (fly) REFERENCES fly (fly_id) ON DELETE CASCADE ON UPDATE CASCADE,\n  FOREIGN KEY (fisherman) REFERENCES person (person_id) ON DELETE CASCADE ON UPDATE CASCADE\n);\n\nCREATE TABLE person (\n  person_id INTEGER NOT NULL PRIMARY KEY,\n  name VARCHAR(45) NOT NULL\n);\n\nCREATE TABLE state (\n  state_code CHAR(2) NOT NULL PRIMARY KEY\n);\n\n--- Using valid sqlite, answer the following questions for the tables provided above.\nQuestion: Who caught the most fish in Colorado?\nselect fisherman, name, count(*) from catch join person on catch.fisherman = person.person_id where state = 'CO' group by fisherman order by count(*) desc;\nQuestion: What is the average price of a store bought fly used to catch a fish?\nselect avg(price) from catch join fly on catch.fly = fly.fly_id where fly.homemade is false;\n Question: ",
+  "questionResults": [
+    {
+      "question": "What is the most caught fish species?",
+      "sql": "select species, count(*) from catch group by species order by count(*) desc limit 1;",
+      "queryResult": "[(5, 8)]",
+      "friendlyResponse": "The most caught fish species is not provided.",
+      "error": "None"
+    },
+    {
+      "question": "Where was the largest fish caught?",
+      "sql": "select state from catch where length = (select max(length) from catch);",
+      "queryResult": "[('NV',), ('NV',), ('NV',), ('NV',)]",
+      "friendlyResponse": "The largest fish was caught in Nevada.",
+      "error": "None"
+    },
+    {
+      "question": "Which fisherman was most successful in 2022?",
+      "sql": "select fisherman, name, count(*) from catch join person on catch.fisherman = person.person_id where catch_time between '2022-01-01' and '2022-12-31' group by fisherman order by count(*) desc;",
+      "queryResult": "[]",
+      "friendlyResponse": "The most successful fisherman in 2022 cannot be determined.",
+      "error": "None"
+    },
+    {
+      "question": "Are there any anglers that tend to catch fish larger than average?",
+      "error": "no such column: person_id"
+    },
+    {
+      "question": "Is there a brand of flies that does better at catching fish?",
+      "sql": "select brand, count(*) from catch join fly on catch.fly = fly.fly_id group by brand order by count(*) desc;",
+      "queryResult": "[(None, 16), ('Umpqua', 8), ('RoundRocks', 8), ('Betts', 8)]",
+      "friendlyResponse": "Yes, Umpqua, RoundRocks, and Betts are some brands of flies that are known to perform well at catching fish.",
+      "error": "None"
+    },
+    {
+      "question": "What is the ratio of native to non-native fish caught?",
+      "error": "You can only execute one statement at a time."
+    },
+    {
+      "question": "What time of day is best for catching fish?",
+      "sql": "select catch_time from catch order by catch_id;",
+      "queryResult": "[('2023-10-15 08:30:00',), ('2023-09-20 12:45:00',), ('2023-11-05 15:20:00',), ('2023-08-28 10:10:00',), ('2023-07-12 09:00:00',), ('2023-06-30 11:55:00',), ('2023-05-22 14:40:00',), ('2023-04-18 13:15:00',), ('2023-03-10 16:05:00',), ('2023-02-05 17:30:00',), ('2023-10-15 08:30:00',), ('2023-09-20 12:45:00',), ('2023-11-05 15:20:00',), ('2023-08-28 10:10:00',), ('2023-07-12 09:00:00',), ('2023-06-30 11:55:00',), ('2023-05-22 14:40:00',), ('2023-04-18 13:15:00',), ('2023-03-10 16:05:00',), ('2023-02-05 17:30:00',), ('2023-10-15 08:30:00',), ('2023-09-20 12:45:00',), ('2023-11-05 15:20:00',), ('2023-08-28 10:10:00',), ('2023-07-12 09:00:00',), ('2023-06-30 11:55:00',), ('2023-05-22 14:40:00',), ('2023-04-18 13:15:00',), ('2023-03-10 16:05:00',), ('2023-02-05 17:30:00',), ('2023-10-15 08:30:00',), ('2023-09-20 12:45:00',), ('2023-11-05 15:20:00',), ('2023-08-28 10:10:00',), ('2023-07-12 09:00:00',), ('2023-06-30 11:55:00',), ('2023-05-22 14:40:00',), ('2023-04-18 13:15:00',), ('2023-03-10 16:05:00',), ('2023-02-05 17:30:00',)]",
+      "friendlyResponse": "According to the information provided, the best time of day for catching fish seems to be around early morning or mid-afternoon.",
+      "error": "None"
+    },
+    {
+      "question": "Is there any correlation between using home tied flies and releasing fish?",
+      "sql": "select count(*) from catch join fly on catch.fly = fly.fly_id where fly.homemade is true and catch.released is true;",
+      "queryResult": "[(8,)]",
+      "friendlyResponse": "Yes, there is a correlation between using home tied flies and releasing fish.",
+      "error": "None"
+    }
+  ]
+}

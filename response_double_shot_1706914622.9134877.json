@@ -1,0 +1,53 @@
+{
+  "strategy": "double_shot",
+  "prompt_prefix": "DROP TABLE IF EXISTS catch;\nDROP TABLE IF EXISTS fish;\nDROP TABLE IF EXISTS fly;\nDROP TABLE IF EXISTS native_fish;\nDROP TABLE IF EXISTS owned_fly;\nDROP TABLE IF EXISTS person;\nDROP TABLE IF EXISTS state;\n\nCREATE TABLE catch (\n  catch_id INTEGER PRIMARY KEY,\n  fisherman INTEGER NOT NULL,\n  species INTEGER NOT NULL,\n  fly INTEGER NOT NULL,\n  length DECIMAL(4,2),\n  weight DECIMAL(4,2),\n  catch_time DATETIME,\n  state CHAR(2),\n  released TINYINT,\n  FOREIGN KEY (fisherman) REFERENCES person (person_id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n  FOREIGN KEY (species) REFERENCES fish (fish_id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n  FOREIGN KEY (fly) REFERENCES fly (fly_id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n  FOREIGN KEY (state) REFERENCES state (state_code) ON DELETE RESTRICT ON UPDATE RESTRICT\n);\n\nCREATE TABLE fish (\n  fish_id INTEGER PRIMARY KEY,\n  species VARCHAR(45) NOT NULL,\n  avg_length DECIMAL(4,2),\n  avg_weight DECIMAL(4,2)\n);\n\nCREATE TABLE fly (\n  fly_id INTEGER PRIMARY KEY,\n  brand VARCHAR(45),\n  price DECIMAL(3,2),\n  homemade TINYINT DEFAULT 0\n);\n\nCREATE TABLE native_fish (\n  state CHAR(2) NOT NULL,\n  fish_id INTEGER NOT NULL,\n  PRIMARY KEY (state, fish_id),\n  FOREIGN KEY (fish_id) REFERENCES fish (fish_id) ON DELETE CASCADE ON UPDATE CASCADE,\n  FOREIGN KEY (state) REFERENCES state (state_code) ON DELETE RESTRICT ON UPDATE RESTRICT\n);\n\nCREATE TABLE owned_fly (\n  fisherman INTEGER NOT NULL,\n  fly INTEGER NOT NULL,\n  PRIMARY KEY (fisherman, fly),\n  FOREIGN KEY (fly) REFERENCES fly (fly_id) ON DELETE CASCADE ON UPDATE CASCADE,\n  FOREIGN KEY (fisherman) REFERENCES person (person_id) ON DELETE CASCADE ON UPDATE CASCADE\n);\n\nCREATE TABLE person (\n  person_id INTEGER NOT NULL PRIMARY KEY,\n  name VARCHAR(45) NOT NULL\n);\n\nCREATE TABLE state (\n  state_code CHAR(2) NOT NULL PRIMARY KEY\n);\n\n--- Using valid sqlite, answer the following questions for the tables provided above.\nQuestion: Who caught the most fish in Colorado?\nselect fisherman, name, count(*) from catch join person on catch.fisherman = person.person_id where state = 'CO' group by fisherman order by count(*) desc;\nQuestion: What is the average price of a store bought fly used to catch a fish?\nselect avg(price) from catch join fly on catch.fly = fly.fly_id where fly.homemade is false;\n Question: ",
+  "questionResults": [
+    {
+      "question": "What is the most caught fish species?",
+      "error": "You can only execute one statement at a time."
+    },
+    {
+      "question": "Where was the largest fish caught recorded in the database?",
+      "error": "no such column: state_code"
+    },
+    {
+      "question": "Which fisherman has been most successful",
+      "sql": "select fisherman, name, count(*) from catch join person on catch.fisherman = person.person_id group by fisherman order by count(*) desc;",
+      "queryResult": "[(10, 'Laura Garcia', 5), (9, 'Matthew Thomas', 5), (8, 'Sarah Taylor', 5), (7, 'David Anderson', 5), (6, 'Jessica Martinez', 5), (5, 'Rusty Shackleford', 5), (4, 'Emily Brown', 5), (3, 'Fisher Mann', 5), (2, 'Jane Doe', 5), (1, 'John Smith', 5)]",
+      "friendlyResponse": "Laura Garcia, Matthew Thomas, Sarah Taylor, David Anderson, Jessica Martinez, Rusty Shackleford, Emily Brown, Fisher Mann, Jane Doe, and John Smith have all been equally successful fishermen with a score of 5 each.",
+      "error": "None"
+    },
+    {
+      "question": "Are there any anglers that tend to catch fish larger than average?",
+      "sql": "select person_id, name\nfrom person\nwhere person_id in (\n\tselect fisherman\n\tfrom catch\n\twhere length > (\n\t\tselect avg(length)\n\t\tfrom catch\n\t)\n\tgroup by fisherman\n);",
+      "queryResult": "[(3, 'Fisher Mann'), (4, 'Emily Brown'), (5, 'Rusty Shackleford'), (6, 'Jessica Martinez'), (7, 'David Anderson'), (8, 'Sarah Taylor'), (9, 'Matthew Thomas'), (10, 'Laura Garcia')]",
+      "friendlyResponse": "Yes, there are several anglers who tend to catch larger than average fish. Some of them are Fisher Mann, Emily Brown, Rusty Shackleford, Jessica Martinez, David Anderson, Sarah Taylor, Matthew Thomas, and Laura Garcia.",
+      "error": "None"
+    },
+    {
+      "question": "Is there a brand of flies that does better at catching fish?",
+      "sql": "select fly.brand, count(*) from catch join fly on catch.fly = fly.fly_id group by fly.brand order by count(*) desc;",
+      "queryResult": "[(None, 20), ('Umpqua', 10), ('RoundRocks', 10), ('Betts', 10)]",
+      "friendlyResponse": "Yes, there are different brands of flies and some fly fishing enthusiasts prefer the brand named Umpqua.",
+      "error": "None"
+    },
+    {
+      "question": "What is the ratio of native to non-native fish caught?",
+      "error": "near \"/\": syntax error"
+    },
+    {
+      "question": "What time of day is best for catching fish?",
+      "sql": "select catch_time, count(*) from catch group by cast(strftime('%H',catch_time) as integer) order by count(*) desc;",
+      "queryResult": "[('2023-02-05 17:30:00', 5), ('2023-03-10 16:05:00', 5), ('2023-11-05 15:20:00', 5), ('2023-05-22 14:40:00', 5), ('2023-04-18 13:15:00', 5), ('2023-09-20 12:45:00', 5), ('2023-06-30 11:55:00', 5), ('2023-08-28 10:10:00', 5), ('2023-07-12 09:00:00', 5), ('2023-10-15 08:30:00', 5)]",
+      "friendlyResponse": "The best times of day for catching fish are typically around 5:30 PM, 4:05 PM, 3:20 PM, 2:40 PM, 1:15 PM, 12:45 PM, 11:55 AM, 10:10 AM, 9:00 AM, and 8:30 AM.",
+      "error": "None"
+    },
+    {
+      "question": "For anglers who use home tied flies, what is the ratio of fish released vs fish kept?",
+      "sql": "select count(*) filter (where released = 1) / count(*) filter (where released = 0) from catch join fly on catch.fly = fly.fly_id where fly.homemade is true;",
+      "queryResult": "[(1,)]",
+      "friendlyResponse": "The ratio for anglers who use home tied flies is typically 1 fish released for every fish kept.",
+      "error": "None"
+    }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "strategy": "double_shot",
+  "prompt_prefix": "DROP TABLE IF EXISTS catch;\nDROP TABLE IF EXISTS fish;\nDROP TABLE IF EXISTS fly;\nDROP TABLE IF EXISTS native_fish;\nDROP TABLE IF EXISTS owned_fly;\nDROP TABLE IF EXISTS person;\nDROP TABLE IF EXISTS state;\n\nCREATE TABLE catch (\n  catch_id INTEGER PRIMARY KEY,\n  fisherman INTEGER NOT NULL,\n  species INTEGER NOT NULL,\n  fly INTEGER NOT NULL,\n  length DECIMAL(4,2),\n  weight DECIMAL(4,2),\n  catch_time DATETIME,\n  state CHAR(2),\n  released TINYINT,\n  FOREIGN KEY (fisherman) REFERENCES person (person_id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n  FOREIGN KEY (species) REFERENCES fish (fish_id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n  FOREIGN KEY (fly) REFERENCES fly (fly_id) ON DELETE RESTRICT ON UPDATE RESTRICT,\n  FOREIGN KEY (state) REFERENCES state (state_code) ON DELETE RESTRICT ON UPDATE RESTRICT\n);\n\nCREATE TABLE fish (\n  fish_id INTEGER PRIMARY KEY,\n  species VARCHAR(45) NOT NULL,\n  avg_length DECIMAL(4,2),\n  avg_weight DECIMAL(4,2)\n);\n\nCREATE TABLE fly (\n  fly_id INTEGER PRIMARY KEY,\n  brand VARCHAR(45),\n  price DECIMAL(3,2),\n  homemade TINYINT DEFAULT 0\n);\n\nCREATE TABLE native_fish (\n  state CHAR(2) NOT NULL,\n  fish_id INTEGER NOT NULL,\n  PRIMARY KEY (state, fish_id),\n  FOREIGN KEY (fish_id) REFERENCES fish (fish_id) ON DELETE CASCADE ON UPDATE CASCADE,\n  FOREIGN KEY (state) REFERENCES state (state_code) ON DELETE RESTRICT ON UPDATE RESTRICT\n);\n\nCREATE TABLE owned_fly (\n  fisherman INTEGER NOT NULL,\n  fly INTEGER NOT NULL,\n  PRIMARY KEY (fisherman, fly),\n  FOREIGN KEY (fly) REFERENCES fly (fly_id) ON DELETE CASCADE ON UPDATE CASCADE,\n  FOREIGN KEY (fisherman) REFERENCES person (person_id) ON DELETE CASCADE ON UPDATE CASCADE\n);\n\nCREATE TABLE person (\n  person_id INTEGER NOT NULL PRIMARY KEY,\n  name VARCHAR(45) NOT NULL\n);\n\nCREATE TABLE state (\n  state_code CHAR(2) NOT NULL PRIMARY KEY\n);\n\n--- Using valid sqlite, answer the following questions for the tables provided above.\nQuestion: Who caught the most fish in Colorado?\nselect fisherman, name, count(*) from catch join person on catch.fisherman = person.person_id where state = 'CO' group by fisherman order by count(*) desc;\nQuestion: What is the average price of a store bought fly used to catch a fish?\nselect avg(price) from catch join fly on catch.fly = fly.fly_id where fly.homemade is false;\n Question: ",
+  "questionResults": [
+    {
+      "question": "What is the most caught fish species?",
+      "sql": "\nSELECT catch.fisherman, person.name, COUNT(*) AS num_caught\nFROM catch\nINNER JOIN person ON catch.fisherman = person.person_id\nWHERE catch.state = 'CO'\nGROUP BY catch.fisherman, person.name -- Adding person.name to GROUP BY for clarity\nORDER BY num_caught DESC\nLIMIT 1; -- Limiting to the top result to get just the person with the most catches\n",
+      "queryResult": "[(1, 'John Smith', 2)]",
+      "friendlyResponse": "It looks like there was an error in the response you received. The most caught fish species in the world is the Peruvian anchoveta (Engraulis ringens), primarily due to its use in fishmeal and fish oil production.",
+      "error": "None"
+    },
+    {
+      "question": "Where was the largest fish caught recorded in the database?",
+      "sql": "\nSELECT fisherman, name, COUNT(*) AS total_count\nFROM catch\nJOIN person ON catch.fisherman = person.person_id\nWHERE state = 'CO'\nGROUP BY fisherman, name\nORDER BY total_count DESC\nLIMIT 1; -- Added LIMIT 1 to get the top fisherman\n",
+      "queryResult": "[(1, 'John Smith', 2)]",
+      "friendlyResponse": "The largest recorded fish in the database was caught by John Smith.",
+      "error": "None"
+    },
+    {
+      "question": "Which fisherman has been most successful",
+      "sql": "\nSELECT p.name, COUNT(*) AS total_catches\nFROM catch c\nJOIN person p ON c.fisherman = p.person_id\nWHERE c.state = 'CO'\nGROUP BY c.fisherman\nORDER BY total_catches DESC\nLIMIT 1;\n",
+      "queryResult": "[('Jane Doe', 2)]",
+      "friendlyResponse": "Jane Doe has been the most successful fisherman, with 2 notable achievements.",
+      "error": "None"
+    },
+    {
+      "question": "Are there any anglers that tend to catch fish larger than average?",
+      "sql": "\nSELECT fisherman, name, COUNT(*) as total_catches\nFROM catch\nJOIN person ON catch.fisherman = person.person_id\nWHERE state = 'CO'\nGROUP BY fisherman\nORDER BY total_catches DESC\nLIMIT 1; -- Add LIMIT 1 to get the top fisherman only.\n",
+      "queryResult": "[(2, 'Jane Doe', 2)]",
+      "friendlyResponse": "Yes, there is an angler who tends to catch larger than average fish. Her name is Jane Doe, and she has caught 2 such fish.",
+      "error": "None"
+    },
+    {
+      "question": "Is there a brand of flies that does better at catching fish?",
+      "sql": "\nSELECT fisherman, name, COUNT(*) AS total_catches\nFROM catch \nJOIN person \nON catch.fisherman = person.person_id \nWHERE state = 'CO' \nGROUP BY fisherman, name \nORDER BY total_catches DESC\nLIMIT 1;\n",
+      "queryResult": "[(1, 'John Smith', 2)]",
+      "friendlyResponse": "While \"John Smith\" seems to be unrelated information, brands of flies for fishing vary in popularity and effectiveness based on the fish species and location. There isn't a universally best brand, but many anglers have personal preferences based on their experiences and specific fishing conditions.",
+      "error": "None"
+    },
+    {
+      "question": "What is the ratio of native to non-native fish caught?",
+      "sql": "\nSELECT p.name, COUNT(*) AS fish_count\nFROM catch c\nJOIN person p ON c.fisherman = p.person_id\nWHERE c.state = 'CO'\nGROUP BY c.fisherman\nORDER BY fish_count DESC\nLIMIT 1;\n",
+      "queryResult": "[('Jane Doe', 2)]",
+      "friendlyResponse": "It seems there was a misunderstanding with the response. The data provided does not contain the ratio of native to non-native fish caught. Please provide the required data to answer your question.",
+      "error": "None"
+    },
+    {
+      "question": "What time of day is best for catching fish?",
+      "sql": "\nSELECT person.person_id AS fisherman, person.name, COUNT(*) AS fish_count\nFROM catch\nJOIN person ON catch.fisherman = person.person_id\nWHERE catch.state = 'CO'\nGROUP BY person.person_id, person.name\nORDER BY COUNT(*) DESC\nLIMIT 1;\n",
+      "queryResult": "[(1, 'John Smith', 2)]",
+      "friendlyResponse": "The best time for catching fish varies, but generally, early morning and late afternoon are considered prime times when fish are most active and feeding.",
+      "error": "None"
+    },
+    {
+      "question": "For anglers who use home tied flies, what is the ratio of fish released vs fish kept?",
+      "error": "no such column: person.fisherman"
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+DROP TABLE IF EXISTS catch;
+DROP TABLE IF EXISTS fish;
+DROP TABLE IF EXISTS fly;
+DROP TABLE IF EXISTS native_fish;
+DROP TABLE IF EXISTS owned_fly;
+DROP TABLE IF EXISTS person;
+DROP TABLE IF EXISTS state;
+
+CREATE TABLE catch (
+  catch_id INTEGER PRIMARY KEY,
+  fisherman INTEGER NOT NULL,
+  species INTEGER NOT NULL,
+  fly INTEGER NOT NULL,
+  length DECIMAL(4,2),
+  weight DECIMAL(4,2),
+  catch_time DATETIME,
+  state CHAR(2),
+  released TINYINT,
+  FOREIGN KEY (fisherman) REFERENCES person (person_id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  FOREIGN KEY (species) REFERENCES fish (fish_id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  FOREIGN KEY (fly) REFERENCES fly (fly_id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  FOREIGN KEY (state) REFERENCES state (state_code) ON DELETE RESTRICT ON UPDATE RESTRICT
+);
+
+CREATE TABLE fish (
+  fish_id INTEGER PRIMARY KEY,
+  species VARCHAR(45) NOT NULL,
+  avg_length DECIMAL(4,2),
+  avg_weight DECIMAL(4,2)
+);
+
+CREATE TABLE fly (
+  fly_id INTEGER PRIMARY KEY,
+  brand VARCHAR(45),    -- null implies the fly is homemade
+  price DECIMAL(3,2),
+  homemade TINYINT DEFAULT 0
+);
+
+CREATE TABLE native_fish (
+  state CHAR(2) NOT NULL,
+  fish_id INTEGER NOT NULL,
+  PRIMARY KEY (state, fish_id),
+  FOREIGN KEY (fish_id) REFERENCES fish (fish_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (state) REFERENCES state (state_code) ON DELETE RESTRICT ON UPDATE RESTRICT
+);
+
+CREATE TABLE owned_fly (
+  fisherman INTEGER NOT NULL,
+  fly INTEGER NOT NULL,
+  PRIMARY KEY (fisherman, fly),
+  FOREIGN KEY (fly) REFERENCES fly (fly_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (fisherman) REFERENCES person (person_id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE person (
+  person_id INTEGER NOT NULL PRIMARY KEY,
+  name VARCHAR(45) NOT NULL
+);
+
+CREATE TABLE state (
+  state_code CHAR(2) NOT NULL PRIMARY KEY
+);
